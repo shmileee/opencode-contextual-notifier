@@ -1,0 +1,65 @@
+{
+  "name": "opencode-contextual-notifier",
+  "version": "0.1.0",
+  "description": "Context-aware macOS notifications and tmux attention markers for OpenCode",
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "dist",
+    "scripts",
+    "opencode-contextual-notifier.tmux",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsdown src/index.ts --format esm --dts --clean",
+    "check": "bun run format:check && bun run typecheck && bun test && bun run shellcheck",
+    "format": "biome check --write .",
+    "format:check": "biome check .",
+    "prepack": "bun run check && bun run build",
+    "shellcheck": "shellcheck scripts/opencode-notifier-tmux opencode-contextual-notifier.tmux",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "opencode",
+    "plugin",
+    "tmux",
+    "notification",
+    "macos"
+  ],
+  "author": "shmileee <ponomarov.aleksandr@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shmileee/opencode-contextual-notifier.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shmileee/opencode-contextual-notifier/issues"
+  },
+  "homepage": "https://github.com/shmileee/opencode-contextual-notifier#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "peerDependencies": {
+    "@opencode-ai/plugin": ">=1.18.0 <2"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.10",
+    "@opencode-ai/plugin": "^1.18.21",
+    "@opencode-ai/sdk": "^1.18.21",
+    "@types/bun": "^1.4.0",
+    "tsdown": "^0.22.14",
+    "typescript": "^6.0.3"
+  }
+}
