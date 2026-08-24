@@ -8,11 +8,24 @@ command -v tmux >/dev/null 2>&1 || exit 0
 MARKER="$(tmux show-option -gqv @opencode-notifier-marker 2>/dev/null)"
 [ -n "$MARKER" ] || tmux set-option -gq @opencode-notifier-marker "●"
 
-STATUS_SEGMENT='#{?@opencode_waiting,#{@opencode_waiting} ,}'
+MARKER_SEGMENT='#{?@opencode_waiting,#{@opencode_waiting} ,}'
+
+prepend_marker() {
+	local option_name="$1"
+	local current
+	current="$(tmux show-window-options -gv "$option_name" 2>/dev/null)"
+	case "$current" in
+	*'#{@opencode_waiting}'*) ;;
+	*) tmux set-window-option -g "$option_name" "${MARKER_SEGMENT}${current}" ;;
+	esac
+}
+
+prepend_marker window-status-format
+prepend_marker window-status-current-format
+
 STATUS_RIGHT="$(tmux show-option -gv status-right 2>/dev/null)"
 case "$STATUS_RIGHT" in
-*'#{@opencode_waiting}'*) ;;
-*) tmux set-option -g status-right "${STATUS_SEGMENT}${STATUS_RIGHT}" ;;
+"${MARKER_SEGMENT}"*) tmux set-option -g status-right "${STATUS_RIGHT#"$MARKER_SEGMENT"}" ;;
 esac
 
 append_hook() {

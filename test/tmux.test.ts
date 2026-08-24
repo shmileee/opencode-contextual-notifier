@@ -128,10 +128,45 @@ describe("tmux helper", () => {
 })
 
 describe("TPM entrypoint", () => {
-  test("installs status rendering and clear hooks idempotently", async () => {
+  test("renders the waiting marker on the origin after another window is selected", async () => {
     // Given
     const tmux = await createTmux()
-    await runTmux(tmux.socket, ["set-option", "-g", "status-right", "BASE"])
+    await runTmux(tmux.socket, ["set-window-option", "-g", "window-status-format", "WINDOW"])
+    await runProcess([plugin], tmux.environment)
+    await runTmux(tmux.socket, ["new-window", "-d", "-t", tmux.session, "-n", "other"])
+
+    // When
+    await runProcess([helper, "complete"], tmux.environment)
+    await runTmux(tmux.socket, ["select-window", "-t", `${tmux.session}:other`])
+
+    // Then
+    expect(
+      await runTmux(tmux.socket, [
+        "display-message",
+        "-p",
+        "-t",
+        tmux.paneID,
+        "#{E:window-status-format}",
+      ]),
+    ).toContain("● WINDOW")
+  })
+
+  test("installs window rendering and clear hooks idempotently", async () => {
+    // Given
+    const tmux = await createTmux()
+    await runTmux(tmux.socket, [
+      "set-option",
+      "-g",
+      "status-right",
+      "#{?@opencode_waiting,#{@opencode_waiting} ,}RIGHT",
+    ])
+    await runTmux(tmux.socket, ["set-window-option", "-g", "window-status-format", "WINDOW"])
+    await runTmux(tmux.socket, [
+      "set-window-option",
+      "-g",
+      "window-status-current-format",
+      "CURRENT",
+    ])
     await runTmux(tmux.socket, [
       "set-hook",
       "-g",
@@ -144,10 +179,15 @@ describe("TPM entrypoint", () => {
     await runProcess([plugin], tmux.environment)
 
     // Then
-    const status = await runTmux(tmux.socket, ["show-option", "-gv", "status-right"])
-    expect(status).toContain("#{@opencode_waiting}")
-    expect(status.match(/#\{@opencode_waiting\}/g)).toHaveLength(1)
-    expect(status).toContain("BASE")
+    expect(await runTmux(tmux.socket, ["show-option", "-gv", "status-right"])).toBe("RIGHT")
+    for (const [optionName, original] of [
+      ["window-status-format", "WINDOW"],
+      ["window-status-current-format", "CURRENT"],
+    ] as const) {
+      const format = await runTmux(tmux.socket, ["show-window-options", "-gv", optionName])
+      expect(format.match(/#\{@opencode_waiting\}/g)).toHaveLength(1)
+      expect(format).toContain(original)
+    }
     const hook = await runTmux(tmux.socket, ["show-hooks", "-g", "after-select-window"])
     expect(hook).toContain("@existing-hook")
     expect(hook).toContain("@opencode_waiting")

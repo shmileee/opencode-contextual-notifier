@@ -190,6 +190,11 @@ if [ "$MARKER" != "●" ]; then
 	tmux_e2e capture-pane -p -t "$PANE_ID" >"$ROOT/pane.log"
 	fail "completion did not set the tmux marker"
 fi
+ORIGIN_STATUS="$(tmux_e2e display-message -p -t "$PANE_ID" '#{E:window-status-format}')"
+case "$ORIGIN_STATUS" in
+*"●"*) ;;
+*) fail "completion marker is not rendered on the non-current origin window" ;;
+esac
 
 [ -f "$ROOT/model-requested" ] || fail "OpenCode did not request a model completion"
 [ -f "$ROOT/model-completed" ] || fail "the deterministic model did not complete successfully"
@@ -198,11 +203,13 @@ if event_seen error; then
 	fail "OpenCode dispatched an error marker event"
 fi
 
-STATUS_RIGHT="$(tmux_e2e show-option -gv status-right)"
-case "$STATUS_RIGHT" in
-*'#{@opencode_waiting}'*) ;;
-*) fail "TPM entrypoint did not install marker rendering" ;;
-esac
+for option_name in window-status-format window-status-current-format; do
+	WINDOW_FORMAT="$(tmux_e2e show-window-options -gv "$option_name")"
+	case "$WINDOW_FORMAT" in
+	*'#{@opencode_waiting}'*) ;;
+	*) fail "TPM entrypoint did not install marker rendering in $option_name" ;;
+	esac
+done
 
 TMUX="$TMUX_VALUE" TMUX_PANE="$PANE_ID" "$INSTALLED_ROOT/scripts/opencode-notifier-tmux" user_message
 CLEARED_MARKER="$(tmux_e2e display-message -p -t "$PANE_ID" '#{@opencode_waiting}')"
