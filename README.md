@@ -1,37 +1,38 @@
 # OpenCode Contextual Notifier
 
-Context-aware macOS notifications and tmux attention markers for OpenCode.
+Get a useful alert when OpenCode needs your attention, without being notified for every session
+event.
 
-```text
-OpenCode event
-     │
-     ▼
-Filter child sessions, unfinished work, and duplicate events
-     │
-     ├── tmux helper → set ● and read "5: ha"
-     │
-     └── macOS → one sound-bearing contextual notification
+## What it does
+
+```mermaid
+flowchart TD
+  A[OpenCode needs attention] --> B[Skip child sessions, unfinished work, and duplicate events]
+  B -->|tmux| C["Mark ● and identify 5: home-assistant"]
+  B -->|macOS| D[Send one contextual notification]
 ```
 
-## Features
+Notifications can include the project, session title, latest prompt, latest result, and the
+originating tmux window. The plugin handles:
 
-- Notifies for completed work, questions, permissions, plan review, and errors.
-- Includes the project, session title, latest prompt, and latest result.
-- Prefixes notifications with the originating tmux window, such as `5: ha`.
-- Leaves `●` on the waiting tmux window and clears it when you return.
-- Ignores child sessions, unfinished todos, active continuation work, duplicate idle events,
-  stale async work, and repeated updates for the same user message.
-- Works without tmux; macOS notifications continue without the window label or marker.
-- Sends no telemetry.
+- completed work;
+- questions and permission requests;
+- plans ready for review;
+- session errors.
+
+In tmux, the originating window keeps a `●` marker until you return to it. Without tmux, macOS
+notifications continue without the window label or marker. The plugin sends no telemetry.
 
 ## Requirements
 
-- OpenCode with the stable community plugin API (`plugin` in `opencode.json`).
+- OpenCode with the community plugin API (`plugin` in `opencode.json`).
 - macOS for Notification Center delivery.
-- tmux 3.2 or newer for the optional marker integration.
-- TPM for the easiest tmux installation.
+- Optional: tmux 3.2 or newer for attention markers.
+- Optional: TPM for the easiest tmux companion installation.
 
-## Install the OpenCode plugin
+## Install
+
+### 1. Add the OpenCode plugin
 
 Add the npm package to `~/.config/opencode/opencode.json`:
 
@@ -45,20 +46,7 @@ Add the npm package to `~/.config/opencode/opencode.json`:
 OpenCode installs npm plugins with Bun on the next startup. Quit and restart every running
 OpenCode process after changing the configuration.
 
-### Choose another sound
-
-Use OpenCode's plugin tuple form:
-
-```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "plugin": [["opencode-contextual-notifier", { "sound": "Glass" }]]
-}
-```
-
-The default sound is `Submarine`.
-
-## Install the tmux companion
+### 2. Add the tmux companion (optional)
 
 Add the plugin before the TPM loader at the bottom of `~/.tmux.conf`:
 
@@ -70,29 +58,22 @@ run "~/.tmux/plugins/tpm/tpm"
 
 Press `prefix` + <kbd>I</kbd> to install it. The companion:
 
-- prepends the waiting marker to `status-right` once;
-- preserves existing status content and hooks;
-- clears the marker on window selection or client focus;
-- exposes `@opencode-notifier-marker` for customization.
+- adds the waiting marker to current and non-current window formats once;
+- preserves existing window formats and hooks;
+- clears the marker when you select the window or focus the tmux client.
 
-Example marker customization:
-
-```tmux
-set -g @opencode-notifier-marker "!"
-```
-
-Without TPM, clone the repository and source the entrypoint:
+Without TPM, clone the repository and source the entrypoint directly:
 
 ```tmux
 run-shell "/absolute/path/opencode-contextual-notifier/opencode-contextual-notifier.tmux"
 ```
 
-Reload tmux configuration after installation. Do not restart the tmux server.
+Reload the tmux configuration after installation. You do not need to restart the tmux server.
 
-## Oh My OpenAgent users
+### 3. Avoid duplicate Oh My OpenAgent notifications
 
-Oh My OpenAgent includes its own session notification hook. Disable that hook to avoid duplicate
-macOS notifications:
+Oh My OpenAgent includes its own session notification hook. Disable it in your active
+`oh-my-openagent.json[c]` or `oh-my-opencode.json[c]` configuration:
 
 ```json
 {
@@ -100,10 +81,44 @@ macOS notifications:
 }
 ```
 
-Put this in your active `oh-my-openagent.json[c]` or `oh-my-opencode.json[c]` configuration and
-restart OpenCode.
+Restart OpenCode after changing the configuration.
 
-## Install from source
+## Customize
+
+### Notification sound
+
+The default sound is `Submarine`. Use OpenCode's plugin tuple form to choose another macOS sound:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [["opencode-contextual-notifier", { "sound": "Glass" }]]
+}
+```
+
+### tmux marker
+
+The default marker is `●`. Set `@opencode-notifier-marker` before the TPM loader to change it:
+
+```tmux
+set -g @opencode-notifier-marker "!"
+```
+
+## How noise filtering works
+
+Before notifying for completed work, the plugin confirms that the session is ready for input. It
+skips:
+
+- child sessions;
+- sessions with unfinished todos;
+- active Oh My OpenAgent continuation work;
+- duplicate idle events and repeated updates;
+- stale events superseded by newer user activity;
+- completion events whose readiness cannot be established safely.
+
+## Development
+
+### Run from source
 
 ```bash
 git clone https://github.com/shmileee/opencode-contextual-notifier.git
@@ -122,7 +137,7 @@ Load the built plugin with an absolute file URL while developing:
 }
 ```
 
-## Development
+### Validate the package
 
 ```bash
 bun run check
