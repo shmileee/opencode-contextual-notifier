@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+
+set -u
+
+EVENT="${1:-}"
+OPTION="@opencode_waiting"
+
+[ -n "${TMUX:-}" ] || exit 0
+command -v tmux >/dev/null 2>&1 || exit 0
+
+resolve_pane_from_ancestry() {
+	local process_id="$$"
+	local pane_rows pane_id pane_process_id parent_id
+	pane_rows="$(tmux list-panes -a -F '#{pane_id} #{pane_pid}' 2>/dev/null)" || return 1
+
+	while [ "$process_id" -gt 1 ] 2>/dev/null; do
+		while read -r pane_id pane_process_id; do
+			[ "$process_id" = "$pane_process_id" ] && {
+				printf '%s\n' "$pane_id"
+				return 0
+			}
+		done <<<"$pane_rows"
+		parent_id="$(ps -o ppid= -p "$process_id" 2>/dev/null)" || return 1
+		process_id="${parent_id//[[:space:]]/}"
+		[ -n "$process_id" ] || return 1
+	done
+	return 1
+}
+
+PANE="${TMUX_PANE:-}"
+if [ -z "$PANE" ]; then
+	PANE="$(resolve_pane_from_ancestry)" || exit 0
+fi
+
+MARKER="$(tmux show-option -gqv @opencode-notifier-marker 2>/dev/null)"
+[ -n "$MARKER" ] || MARKER="●"
+
+case "$EVENT" in
+permission | question | plan_exit | complete | error)
+	tmux set-option -wq -t "$PANE" "$OPTION" "$MARKER" 2>/dev/null || true
+	;;
+user_message | session_started)
+	tmux set-option -wq -u -t "$PANE" "$OPTION" 2>/dev/null || true
+	;;
+window_label)
+	tmux display-message -p -t "$PANE" '#{window_index}: #{window_name}' 2>/dev/null || true
+	;;
+esac
+
+exit 0
