@@ -1,4 +1,5 @@
 node_modules/
 dist/
+.omo/
 *.tgz
 .DS_Store
