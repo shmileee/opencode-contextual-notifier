@@ -1,0 +1,6 @@
+.git
+.codegraph
+.omo
+dist
+node_modules
+*.tgz
