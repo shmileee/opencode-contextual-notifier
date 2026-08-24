@@ -24,8 +24,9 @@
     "format": "biome check --write .",
     "format:check": "biome check .",
     "prepack": "bun run check && bun run build",
-    "shellcheck": "shellcheck scripts/opencode-notifier-tmux opencode-contextual-notifier.tmux",
+    "shellcheck": "shellcheck scripts/opencode-notifier-tmux opencode-contextual-notifier.tmux test/e2e/run.sh test/e2e/container-tmux.sh",
     "test": "bun test",
+    "test:e2e": "bash test/e2e/run.sh",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [
