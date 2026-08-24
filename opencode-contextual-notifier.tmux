@@ -34,7 +34,7 @@ append_hook() {
 	local current
 	current="$(tmux show-hooks -g "$hook_name" 2>/dev/null)"
 	case "$current" in
-	*"$hook_command"*) ;;
+	*'@opencode_waiting'*) ;;
 	*) tmux set-hook -ag "$hook_name" "$hook_command" ;;
 	esac
 }

@@ -188,8 +188,37 @@ describe("TPM entrypoint", () => {
       expect(format.match(/#\{@opencode_waiting\}/g)).toHaveLength(1)
       expect(format).toContain(original)
     }
+    for (const hookName of ["after-select-window", "session-window-changed", "client-focus-in"]) {
+      const hook = await runTmux(tmux.socket, ["show-hooks", "-g", hookName])
+      expect(hook.split("\n").filter((line) => line.includes("@opencode_waiting"))).toHaveLength(1)
+      if (hookName === "after-select-window") {
+        expect(hook).toContain("@existing-hook")
+      }
+    }
+  })
+
+  test("reuses a legacy marker-clearing hook without replacing other hooks", async () => {
+    // Given
+    const tmux = await createTmux()
+    await runTmux(tmux.socket, [
+      "set-hook",
+      "-g",
+      "after-select-window",
+      "set-window-option -q -u @opencode_waiting",
+    ])
+    await runTmux(tmux.socket, [
+      "set-hook",
+      "-ag",
+      "after-select-window",
+      "set-option -g @existing-hook yes",
+    ])
+
+    // When
+    await runProcess([plugin], tmux.environment)
+
+    // Then
     const hook = await runTmux(tmux.socket, ["show-hooks", "-g", "after-select-window"])
+    expect(hook.split("\n").filter((line) => line.includes("@opencode_waiting"))).toHaveLength(1)
     expect(hook).toContain("@existing-hook")
-    expect(hook).toContain("@opencode_waiting")
   })
 })

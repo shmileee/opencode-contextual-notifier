@@ -1,6 +1,6 @@
 {
   "name": "opencode-contextual-notifier",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Context-aware macOS notifications and tmux attention markers for OpenCode",
   "type": "module",
   "main": "./dist/index.mjs",
