@@ -44,7 +44,7 @@ async function createTmux(): Promise<{
   const socket = `opencode-notifier-test-${suffix}`
   const session = `notifier-test-${suffix}`
   resources.push({ session, socket })
-  await runTmux(socket, ["new-session", "-d", "-s", session, "-n", "ha"])
+  await runTmux(socket, ["-f", "/dev/null", "new-session", "-d", "-s", session, "-n", "ha"])
   const paneID = await runTmux(socket, ["display-message", "-p", "-t", session, "#{pane_id}"])
   const tmux = await runTmux(socket, [
     "display-message",
@@ -77,7 +77,7 @@ describe("tmux helper", () => {
 
     // Then
     expect(completion.exitCode, completion.stderr).toBe(0)
-    expect(label.stdout.trim()).toBe("1: ha")
+    expect(label.stdout.trim()).toBe("0: ha")
     expect(
       await runTmux(tmux.socket, [
         "display-message",
